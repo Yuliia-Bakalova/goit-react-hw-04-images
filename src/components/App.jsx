@@ -1,85 +1,80 @@
-import { Component } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import { fetchImages } from './Api/api';
+import { useState, useEffect } from 'react';
+import { ToastContainer } from 'react-toastify';
+import { fetchImages } from '../api/api';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { LoadMoreBtn } from './Button/Button';
 import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
 
-export class App extends Component {
-  state = {
-    searchQuery: '',
-    images: [],
-    page: 1,
-    status: 'idle',
-    showModal: false,
-    largeImageModal: null,
-  };
-
-  async componentDidUpdate(_, prevState) {
-  
-    if (prevState.searchQuery !== this.state.searchQuery || prevState.page !== this.state.page) {
-      this.setState({ status: 'pending' });
-      if (prevState.searchQuery !== this.state.searchQuery) {
-        this.setState({ page: 1 });
-      }
-
-      try {
-        const imageList = await fetchImages(this.state.searchQuery, this.state.page);
-        this.setState(prevState => ({
-          images: [...prevState.images, ...imageList],
-          status: 'resolved',
-        }));
-        if (imageList.length === 0) {
-          toast.error(
-            'Sorry, there are no images matching your search query. Please, try again.',
-            {
-              position: 'top-right',
-            }
-          );
-        }
-      } catch (error) {
-        toast.error('Something went wrong. Please, reload the page.', {
-          position: 'top-right',
-        });
-        this.setState({ status: 'rejected' });
-      }
+export const App = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [largeImageModal, setLargeImageModal] = useState(null);
+   
+ 
+  useEffect(() => {
+    if (searchQuery === '') {
+      return;
     }
-  }
+    setPage(1);
+    setImages([]);
+    fetchImages(searchQuery, 1, showLoader, hideLoader).then(res => {
+      setImages(res);
+    });
+  },
+    [searchQuery]);
+  
 
-  onFormSubmit = searchQuery => {
-    this.setState({ searchQuery, images: [], page: 1 });
+  useEffect(() => {
+    if (page === 1) {
+      return;
+    }
+
+    fetchImages(searchQuery, page, showLoader, hideLoader).then(res => {
+      setImages(prevState => {
+        return [...prevState, ...res];
+      });
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+  
+ const onFormSubmit = searchQuery => {
+   setSearchQuery(searchQuery);
   };
 
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+ const loadMore = () => {
+   setPage(prevPage => prevPage + 1);
   };
 
-  onToggleModal = largeImageURL => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-    this.setState({ largeImageModal: largeImageURL });
+const onToggleModal = largeImageURL => {
+  setShowModal(!showModal);
+  setLargeImageModal(largeImageURL);
   };
 
-  render() {
-    const { images, status, showModal, largeImageModal } = this.state;
+ const showLoader = () => {
+    setIsLoading(true);
+  };
+
+  const hideLoader = () => {
+    setIsLoading(false);
+  };
 
     return (
       <>
-        <Searchbar onSubmit={this.onFormSubmit} />
+        <Searchbar onSubmit={onFormSubmit} />
         {images.length > 0 && (
-          <ImageGallery pictures={images} onClick={this.onToggleModal} />
+          <ImageGallery pictures={images} onClick={onToggleModal} />
         )}
-        {status === 'pending' && <Loader />}
+        {isLoading && <Loader />}
         {(images.length === 12 || images.length > 12) && (
-          <LoadMoreBtn onClick={this.loadMore} />
+          <LoadMoreBtn onClick={loadMore} />
         )}
         {showModal && (
-          <Modal onClose={this.onToggleModal}>
+          <Modal onClose={onToggleModal}>
             <img src={largeImageModal} alt="" />
           </Modal>
         )}
@@ -87,4 +82,4 @@ export class App extends Component {
       </>
     );
   }
-}
+

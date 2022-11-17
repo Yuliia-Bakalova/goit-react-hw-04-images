@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import { BiSearchAlt } from 'react-icons/bi';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
@@ -7,32 +7,27 @@ import {SearchHeader, SearchForm, SearchButton,  SearchInput } from './Searchbar
  
 
 
-export class Searchbar extends Component {
-  state = {
-    searchQuery: '',
+export const Searchbar = ({onSubmit}) => {
+ const [searchQuery, setSearchQuery] = useState('');
+
+const  onInputChange = evt => {
+  setSearchQuery( evt.currentTarget.value.toLowerCase());
   };
 
-  onInputChange = evt => {
-    this.setState({ searchQuery: evt.currentTarget.value.toLowerCase() });
-  };
-
-  onFormSubmit = evt => {
+ const onFormSubmit = evt => {
     evt.preventDefault();
-    if (this.state.searchQuery.trim() === '') {
-      toast.error('Please, enter your search query. ', {
+    if (searchQuery.trim() === '') {
+      return toast.error('Please, enter your search query. ', {
         position: 'top-right',
-      });
-      this.setState({ searchQuery: '' });
-      return;
+        autoClose: 3500,
+      }); 
     }
-    this.props.onSubmit(this.state.searchQuery);
-    this.setState({ searchQuery: '' });
+  onSubmit(searchQuery);
+  setSearchQuery('');
   };
-
-  render() {
     return (
       <SearchHeader>
-        <SearchForm onSubmit={this.onFormSubmit}>
+        <SearchForm onSubmit={onFormSubmit}>
           <SearchButton type="submit">
             <BiSearchAlt size={30} /> <span>Search</span>
           </SearchButton>
@@ -42,14 +37,14 @@ export class Searchbar extends Component {
             autoComplete="off"
             autoFocus
             placeholder="Search images and photos"
-            value={this.state.searchQuery}
-            onChange={this.onInputChange}
+            value={searchQuery}
+            onChange={onInputChange}
           />
         </SearchForm>
       </SearchHeader>
     );
   }
-}
+
 
 Searchbar.propTypes = {
   onSubmit: PropTypes.func.isRequired,
